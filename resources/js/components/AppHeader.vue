@@ -10,14 +10,32 @@ const lastPill = { x: 0, w: 0, ready: false };
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
+    ArrowLeftRight,
     Bell,
+    Briefcase,
     Calendar,
+    CalendarCheck,
     ChevronDown,
-    House,
+    ClipboardList,
+    Database,
+    FileText,
+    Gift,
+    GraduationCap,
+    KeyRound,
+    Laptop,
     LayoutGrid,
     Menu,
     MessageSquare,
+    Newspaper,
+    Plane,
     Search,
+    Ticket,
+    TicketPercent,
+    UserMinus,
+    UserPlus,
+    Users,
+    Wallet,
+    Wrench,
     X,
 } from '@lucide/vue';
 import type { Component } from 'vue';
@@ -54,10 +72,20 @@ type NavEntry = {
     children?: ModuleItem[];
 };
 
+type ToolItem = {
+    key: string;
+    title: string;
+    icon: Component;
+    href: NavItem['href'];
+};
+
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
-    /** Elementos del desplegable «Módulos». */
-    modules?: ModuleItem[];
+    /**
+     * Claves de las herramientas que el rol del usuario puede ver (ver
+     * `toolCatalog`). Sin valor se muestran todas; con `[]` se oculta el botón.
+     */
+    allowedTools?: string[];
     /** Segunda línea de la tarjeta de usuario, p. ej. «Kaizen Holdings · IT Tecnología». */
     userSubtitle?: string;
     notificationCount?: number;
@@ -67,7 +95,7 @@ type Props = {
 
 const props = withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
-    modules: () => [],
+    allowedTools: undefined,
     userSubtitle: '',
     notificationCount: 0,
     animatedMark: true,
@@ -83,30 +111,130 @@ const auth = computed(() => page.props.auth);
 const { isCurrentUrl } = useCurrentUrl();
 
 // Cambia estos href por tus rutas de Wayfinder cuando existan.
-const navEntries = computed<NavEntry[]>(() => [
-    { key: 'inicio', title: 'Inicio', icon: House, href: dashboard() },
+const navEntries: NavEntry[] = [
     {
-        key: 'modulos',
-        title: 'Módulos',
-        icon: LayoutGrid,
-        children: props.modules,
+        key: 'servicios',
+        title: 'Servicios KH',
+        icon: Briefcase,
+        href: '/servicios-kh',
+    },
+    { key: 'hrspace', title: 'HR.Space', icon: Users, href: '/hr-space' },
+    {
+        key: 'university',
+        title: 'Kaizen University',
+        icon: GraduationCap,
+        href: '/kaizen-university',
     },
     {
         key: 'comunicaciones',
         title: 'Comunicaciones',
         icon: MessageSquare,
-        href: '/comunicaciones',
+        children: [
+            {
+                title: 'Noticias',
+                href: '/comunicaciones/noticias',
+                icon: Newspaper,
+            },
+            {
+                title: 'Calendario',
+                href: '/comunicaciones/calendario',
+                icon: Calendar,
+            },
+        ],
+    },
+    { key: 'koupons', title: 'Koupons', icon: TicketPercent, href: '/koupons' },
+];
+
+// Herramientas administrativas; cada rol ve solo las de `allowedTools`.
+const toolCatalog: ToolItem[] = [
+    {
+        key: 'gestion-servicios',
+        title: 'Gestión de Servicios',
+        icon: ClipboardList,
+        href: '/herramientas/gestion-servicios',
     },
     {
-        key: 'calendario',
-        title: 'Calendario',
-        icon: Calendar,
-        href: '/calendario',
+        key: 'data-master',
+        title: 'Data Máster',
+        icon: Database,
+        href: '/herramientas/data-master',
     },
-]);
+    {
+        key: 'nuevo-ingreso',
+        title: 'Nuevo Ingreso',
+        icon: UserPlus,
+        href: '/herramientas/nuevo-ingreso',
+    },
+    {
+        key: 'movimiento-personal',
+        title: 'Movimiento de Personal',
+        icon: ArrowLeftRight,
+        href: '/herramientas/movimiento-personal',
+    },
+    {
+        key: 'egreso-personal',
+        title: 'Egreso de Personal',
+        icon: UserMinus,
+        href: '/herramientas/egreso-personal',
+    },
+    {
+        key: 'prestaciones',
+        title: 'Prestaciones',
+        icon: Wallet,
+        href: '/herramientas/prestaciones',
+    },
+    {
+        key: 'vacaciones',
+        title: 'Vacaciones',
+        icon: Plane,
+        href: '/herramientas/vacaciones',
+    },
+    {
+        key: 'permisos',
+        title: 'Permisos',
+        icon: CalendarCheck,
+        href: '/herramientas/permisos',
+    },
+    {
+        key: 'beneficios',
+        title: 'Beneficios',
+        icon: Gift,
+        href: '/herramientas/beneficios',
+    },
+    {
+        key: 'admin-koupons',
+        title: 'Admin Koupons',
+        icon: Ticket,
+        href: '/herramientas/admin-koupons',
+    },
+    {
+        key: 'contratos-laborales',
+        title: 'Contratos Laborales',
+        icon: FileText,
+        href: '/herramientas/contratos-laborales',
+    },
+    {
+        key: 'asignacion-equipos',
+        title: 'Asignación de equipos',
+        icon: Laptop,
+        href: '/herramientas/asignacion-equipos',
+    },
+    {
+        key: 'asignacion-licencias',
+        title: 'Asignación de licencias',
+        icon: KeyRound,
+        href: '/herramientas/asignacion-licencias',
+    },
+];
+
+const tools = computed(() =>
+    props.allowedTools
+        ? toolCatalog.filter((tool) => props.allowedTools?.includes(tool.key))
+        : toolCatalog,
+);
 
 const activeKey = computed(() => {
-    const match = navEntries.value.find((entry) =>
+    const match = navEntries.find((entry) =>
         entry.children
             ? entry.children.some((child) => isCurrentUrl(child.href))
             : entry.href !== undefined && isCurrentUrl(entry.href),
@@ -119,10 +247,12 @@ const activeKey = computed(() => {
 const pendingKey = ref<string | null>(null);
 const shownKey = computed(() => pendingKey.value ?? activeKey.value);
 
-const modulesOpen = ref(false);
+const commsOpen = ref(false);
+const toolsOpen = ref(false);
 const userOpen = ref(false);
 const sheetOpen = ref(false);
-const mobileModulesOpen = ref(false);
+const mobileCommsOpen = ref(false);
+const mobileToolsOpen = ref(false);
 
 const searchOpen = ref(false);
 const searchTouched = ref(false);
@@ -130,7 +260,11 @@ const query = ref('');
 const searchInput = ref<HTMLInputElement | null>(null);
 
 const engaged = computed(
-    () => searchOpen.value || userOpen.value || modulesOpen.value,
+    () =>
+        searchOpen.value ||
+        userOpen.value ||
+        commsOpen.value ||
+        toolsOpen.value,
 );
 
 const userSubtitle = computed(
@@ -156,7 +290,8 @@ function onNavClick(event: MouseEvent, key: string) {
 
     pendingKey.value = key;
     sheetOpen.value = false;
-    modulesOpen.value = false;
+    commsOpen.value = false;
+    toolsOpen.value = false;
 }
 
 /* ── Brillo del borde que sigue al cursor ───────────────────────────── */
@@ -260,7 +395,8 @@ function openSearch() {
     if (!searchOpen.value) {
         searchOpen.value = true;
         searchTouched.value = true;
-        modulesOpen.value = false;
+        commsOpen.value = false;
+        toolsOpen.value = false;
         userOpen.value = false;
     }
 
@@ -378,13 +514,13 @@ onBeforeUnmount(() => {
                                                         shownKey === entry.key,
                                                 }"
                                                 :aria-expanded="
-                                                    mobileModulesOpen
+                                                    mobileCommsOpen
                                                         ? 'true'
                                                         : 'false'
                                                 "
                                                 @click="
-                                                    mobileModulesOpen =
-                                                        !mobileModulesOpen
+                                                    mobileCommsOpen =
+                                                        !mobileCommsOpen
                                                 "
                                             >
                                                 <component
@@ -402,7 +538,7 @@ onBeforeUnmount(() => {
                                                 class="kn-sub"
                                                 :class="{
                                                     'is-open':
-                                                        mobileModulesOpen,
+                                                        mobileCommsOpen,
                                                 }"
                                             >
                                                 <div class="kn-sub-inner">
@@ -412,7 +548,7 @@ onBeforeUnmount(() => {
                                                         :href="item.href"
                                                         class="kn-sub-link"
                                                         :tabindex="
-                                                            mobileModulesOpen
+                                                            mobileCommsOpen
                                                                 ? 0
                                                                 : -1
                                                         "
@@ -425,16 +561,6 @@ onBeforeUnmount(() => {
                                                     >
                                                         {{ item.title }}
                                                     </Link>
-                                                    <p
-                                                        v-if="
-                                                            !entry.children
-                                                                .length
-                                                        "
-                                                        class="kn-empty"
-                                                    >
-                                                        Aún no hay módulos
-                                                        configurados.
-                                                    </p>
                                                 </div>
                                             </div>
                                         </template>
@@ -466,6 +592,56 @@ onBeforeUnmount(() => {
                                                 aria-hidden="true"
                                             />
                                         </Link>
+                                    </template>
+
+                                    <template v-if="tools.length">
+                                        <p class="kn-sheet-label">
+                                            Administración
+                                        </p>
+                                        <button
+                                            type="button"
+                                            class="kn-sheet-link"
+                                            :aria-expanded="
+                                                mobileToolsOpen
+                                                    ? 'true'
+                                                    : 'false'
+                                            "
+                                            @click="
+                                                mobileToolsOpen =
+                                                    !mobileToolsOpen
+                                            "
+                                        >
+                                            <Wrench
+                                                class="kn-ic"
+                                                aria-hidden="true"
+                                            />
+                                            Herramientas
+                                            <ChevronDown
+                                                class="kn-ic kn-chevron kn-push"
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                        <div
+                                            class="kn-sub"
+                                            :class="{
+                                                'is-open': mobileToolsOpen,
+                                            }"
+                                        >
+                                            <div class="kn-sub-inner">
+                                                <Link
+                                                    v-for="tool in tools"
+                                                    :key="tool.key"
+                                                    :href="tool.href"
+                                                    class="kn-sub-link"
+                                                    :tabindex="
+                                                        mobileToolsOpen ? 0 : -1
+                                                    "
+                                                    @click="sheetOpen = false"
+                                                >
+                                                    {{ tool.title }}
+                                                </Link>
+                                            </div>
+                                        </div>
                                     </template>
                                 </nav>
 
@@ -532,7 +708,7 @@ onBeforeUnmount(() => {
                         <template v-for="entry in navEntries" :key="entry.key">
                             <DropdownMenu
                                 v-if="entry.children"
-                                v-model:open="modulesOpen"
+                                v-model:open="commsOpen"
                             >
                                 <DropdownMenuTrigger as-child>
                                     <button
@@ -563,16 +739,13 @@ onBeforeUnmount(() => {
                                 <DropdownMenuContent
                                     align="start"
                                     :side-offset="16"
-                                    class="min-w-[440px] rounded-[22px] border-white/90 bg-[#f6f8fb]/95 p-2.5 shadow-[0_2px_8px_rgba(5,25,36,0.06),0_28px_56px_-22px_rgba(5,25,36,0.38)] backdrop-blur-xl duration-300 dark:border-white/10 dark:bg-[#111d25]/95"
+                                    class="min-w-[250px] rounded-[22px] border-white/90 bg-[#f6f8fb]/95 p-2.5 shadow-[0_2px_8px_rgba(5,25,36,0.06),0_28px_56px_-22px_rgba(5,25,36,0.38)] backdrop-blur-xl duration-300 dark:border-white/10 dark:bg-[#111d25]/95"
                                 >
                                     <div class="kn-menu-body">
                                         <p class="kn-menu-title">
                                             {{ entry.title }}
                                         </p>
-                                        <div
-                                            v-if="entry.children.length"
-                                            class="kn-menu-grid"
-                                        >
+                                        <div class="kn-menu-list">
                                             <DropdownMenuItem
                                                 v-for="item in entry.children"
                                                 :key="item.title"
@@ -618,9 +791,6 @@ onBeforeUnmount(() => {
                                                 </Link>
                                             </DropdownMenuItem>
                                         </div>
-                                        <p v-else class="kn-empty">
-                                            Aún no hay módulos configurados.
-                                        </p>
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -695,6 +865,53 @@ onBeforeUnmount(() => {
                                 <X class="kn-ic" aria-hidden="true" />
                             </button>
                         </div>
+
+                        <!-- Herramientas (según el rol) -->
+                        <DropdownMenu
+                            v-if="tools.length"
+                            v-model:open="toolsOpen"
+                        >
+                            <DropdownMenuTrigger as-child>
+                                <button
+                                    type="button"
+                                    class="kn-icon kn-tools"
+                                    aria-label="Herramientas"
+                                >
+                                    <Wrench class="kn-ic" aria-hidden="true" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                align="end"
+                                :side-offset="14"
+                                class="w-[480px] max-w-[calc(100vw-24px)] rounded-[22px] border-white/90 bg-[#f6f8fb]/95 p-2.5 shadow-[0_2px_8px_rgba(5,25,36,0.06),0_28px_56px_-22px_rgba(5,25,36,0.38)] backdrop-blur-xl duration-300 dark:border-white/10 dark:bg-[#111d25]/95"
+                            >
+                                <div class="kn-menu-body">
+                                    <p class="kn-menu-title">Herramientas</p>
+                                    <div class="kn-tools-grid">
+                                        <DropdownMenuItem
+                                            v-for="tool in tools"
+                                            :key="tool.key"
+                                            as-child
+                                        >
+                                            <Link
+                                                :href="tool.href"
+                                                class="kn-tool"
+                                                @click="toolsOpen = false"
+                                            >
+                                                <span class="kn-tool-icon">
+                                                    <component
+                                                        :is="tool.icon"
+                                                        class="kn-ic"
+                                                        aria-hidden="true"
+                                                    />
+                                                </span>
+                                                {{ tool.title }}
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </div>
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
                         <!-- Notificaciones -->
                         <button
@@ -1064,7 +1281,7 @@ onBeforeUnmount(() => {
     display: inline-flex;
     align-items: center;
     height: 40px;
-    padding: 0 16px;
+    padding: 0 15px;
     border: 0;
     border-radius: 999px;
     background: transparent;
@@ -1072,6 +1289,7 @@ onBeforeUnmount(() => {
     font-size: 15px;
     font-weight: 500;
     color: var(--kn-ink-2);
+    white-space: nowrap;
     cursor: pointer;
     transition: color 0.25s var(--kn-soft);
 }
@@ -1167,10 +1385,10 @@ onBeforeUnmount(() => {
     color: var(--kn-ink-3);
 }
 
-.kn-menu-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
+.kn-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .kn-menu-item {
@@ -1244,11 +1462,73 @@ onBeforeUnmount(() => {
     color: var(--kn-ink-3);
 }
 
-.kn-empty {
-    margin: 0;
-    padding: 6px 10px 10px;
-    font-size: 13px;
-    color: var(--kn-ink-3);
+.kn-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 4px;
+}
+
+.kn-tool {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--kn-ink);
+    outline: none;
+    animation: kn-drop 0.45s var(--kn-soft) backwards;
+    transition:
+        background 0.25s,
+        transform 0.45s var(--kn-spring),
+        box-shadow 0.3s;
+}
+
+.kn-tool:nth-child(2n) {
+    animation-delay: 0.03s;
+}
+
+.kn-tool:nth-child(n + 5) {
+    animation-delay: 0.08s;
+}
+
+.kn-tool:nth-child(n + 9) {
+    animation-delay: 0.14s;
+}
+
+.kn-tool:hover,
+.kn-tool[data-highlighted] {
+    background: var(--kn-active);
+    box-shadow: 0 6px 14px -10px rgba(var(--kn-shade), 0.35);
+    transform: translateX(3px);
+}
+
+.kn-tool-icon {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background: var(--kn-chip);
+    color: var(--kn-ink);
+    transition:
+        transform 0.5s var(--kn-spring),
+        background 0.25s;
+}
+
+.kn-tool-icon .kn-ic {
+    width: 16px;
+    height: 16px;
+}
+
+.kn-tool:hover .kn-tool-icon,
+.kn-tool[data-highlighted] .kn-tool-icon {
+    background: var(--kn-group);
+    transform: rotate(-8deg) scale(1.08);
 }
 
 /* ── Lado derecho ───────────────────────────────────────────────────── */
@@ -1314,6 +1594,25 @@ onBeforeUnmount(() => {
 
 .kn-bell:hover .kn-ic {
     animation: kn-ring 0.9s var(--kn-soft);
+}
+
+.kn-tools .kn-ic {
+    transition: transform 0.6s var(--kn-spring);
+}
+
+.kn-tools:hover .kn-ic {
+    animation: kn-twist 0.8s var(--kn-soft);
+}
+
+.kn-tools[data-state='open'] {
+    background: var(--kn-active);
+    box-shadow:
+        0 0 0 4px rgba(93, 128, 147, 0.14),
+        0 10px 20px -12px rgba(var(--kn-shade), 0.4);
+}
+
+.kn-tools[data-state='open'] .kn-ic {
+    transform: rotate(-45deg);
 }
 
 .kn-badge {
@@ -1604,6 +1903,25 @@ onBeforeUnmount(() => {
     line-height: 1.25;
 }
 
+/* Al abrir la búsqueda la tarjeta cede espacio ocultando el texto. */
+.kn-user .kn-user-text {
+    max-width: 230px;
+    overflow: hidden;
+    transition:
+        max-width 0.6s var(--kn-soft),
+        opacity 0.35s var(--kn-soft);
+}
+
+.kn-bar.is-searching .kn-user .kn-user-text {
+    max-width: 0;
+    opacity: 0;
+}
+
+.kn-bar.is-searching .kn-user {
+    gap: 4px;
+    padding-right: 10px;
+}
+
 .kn-user-name {
     font-size: 14px;
     font-weight: 600;
@@ -1652,8 +1970,23 @@ onBeforeUnmount(() => {
 
 .kn-sheet-nav {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 4px;
+    min-height: 0;
+    margin: 0 -6px;
+    padding: 0 6px 6px;
+    overflow-y: auto;
+}
+
+.kn-sheet-label {
+    flex-shrink: 0;
+    margin: 10px 14px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--kn-ink-3);
 }
 
 .kn-sheet-nav > * {
@@ -1798,7 +2131,19 @@ onBeforeUnmount(() => {
 }
 
 /* ── Responsivo ─────────────────────────────────────────────────────── */
-@media (max-width: 1023.98px) {
+@media (max-width: 1359.98px) {
+    .kn-bar .kn-user .kn-user-text {
+        max-width: 0;
+        opacity: 0;
+    }
+
+    .kn-bar .kn-user {
+        gap: 4px;
+        padding-right: 10px;
+    }
+}
+
+@media (max-width: 1179.98px) {
     .kn-links {
         display: none;
     }
@@ -1846,6 +2191,11 @@ onBeforeUnmount(() => {
     }
 
     .kn-kbd {
+        display: none;
+    }
+
+    /* En móvil las herramientas viven en el menú lateral. */
+    .kn-tools {
         display: none;
     }
 
@@ -1919,6 +2269,28 @@ onBeforeUnmount(() => {
     70%,
     100% {
         box-shadow: 0 0 0 7px rgba(93, 128, 147, 0);
+    }
+}
+
+@keyframes kn-twist {
+    0% {
+        rotate: 0deg;
+    }
+
+    30% {
+        rotate: -28deg;
+    }
+
+    60% {
+        rotate: 12deg;
+    }
+
+    80% {
+        rotate: -4deg;
+    }
+
+    100% {
+        rotate: 0deg;
     }
 }
 
