@@ -1369,7 +1369,11 @@ onBeforeUnmount(() => {
         color 0.25s;
 }
 
-.kn-link:hover .kn-chevron,
+.kn-link:hover .kn-chevron {
+    color: var(--kn-ink);
+    transform: translateY(2px);
+}
+
 .kn-link[data-state='open'] .kn-chevron {
     color: var(--kn-ink);
     transform: rotate(-180deg);
