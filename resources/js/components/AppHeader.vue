@@ -1369,14 +1369,19 @@ onBeforeUnmount(() => {
         color 0.25s;
 }
 
+/* En la barra la flecha apunta arriba en reposo y abajo con el menú abierto. */
+.kn-link .kn-chevron {
+    transform: rotate(180deg) translateY(0);
+}
+
 .kn-link:hover .kn-chevron {
     color: var(--kn-ink);
-    transform: translateY(2px);
+    transform: rotate(180deg) translateY(2px);
 }
 
 .kn-link[data-state='open'] .kn-chevron {
     color: var(--kn-ink);
-    transform: rotate(-180deg);
+    transform: rotate(0deg) translateY(0);
 }
 
 /* ── Contenido de los desplegables (se renderiza en un portal) ─────── */
